@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIに話しかける | ヤングケアラーサポート</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green: #4a9b7f;
+      --green-light: #6dbfa0;
+      --green-pale: #e8f5f0;
+      --cream: #fdfaf5;
+      --text: #2d3a35;
+      --text-soft: #6b8278;
+      --accent: #f0a050;
+      --user-bubble: #4a9b7f;
+      --ai-bubble: #ffffff;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ヘッダー */
+    header {
+      padding: 16px 24px;
+      background: white;
+      border-bottom: 1px solid rgba(74,155,127,0.12);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      color: var(--text-soft);
+      font-size: 13px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .back-btn:hover { background: var(--green-pale); color: var(--green); }
+
+    .header-title {
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      font-size: 15px;
+      color: var(--green);
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .clear-btn {
+      background: none;
+      border: 1px solid rgba(74,155,127,0.3);
+      color: var(--text-soft);
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: all 0.2s;
+    }
+    .clear-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-pale); }
+
+    /* チャットエリア */
+    #chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    /* ウェルカムメッセージ */
+    .welcome {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-soft);
+    }
+    .welcome .icon { font-size: 40px; margin-bottom: 16px; }
+    .welcome h2 {
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      font-size: 18px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .welcome p { font-size: 13px; line-height: 1.8; }
+
+    /* メッセージ */
+    .message {
+      display: flex;
+      gap: 10px;
+      max-width: 680px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .message.user {
+      margin-left: auto;
+      flex-direction: row-reverse;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .message.ai .avatar { background: var(--green-pale); }
+    .message.user .avatar { background: rgba(74,155,127,0.15); }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.8;
+      max-width: calc(100% - 50px);
+    }
+
+    .message.ai .bubble {
+      background: var(--ai-bubble);
+      border: 1px solid rgba(74,155,127,0.15);
+      border-top-left-radius: 4px;
+      box-shadow: 0 1px 6px rgba(74,155,127,0.08);
+    }
+
+    .message.user .bubble {
+      background: var(--user-bubble);
+      color: white;
+      border-top-right-radius: 4px;
+    }
+
+    /* タイピング */
+    .typing-indicator {
+      display: flex;
+      gap: 5px;
+      padding: 14px 16px;
+    }
+    .typing-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--green-light);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+
+    /* 入力エリア */
+    footer {
+      padding: 12px 16px;
+      background: white;
+      border-top: 1px solid rgba(74,155,127,0.12);
+      flex-shrink: 0;
+    }
+
+    .input-wrap {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    textarea {
+      flex: 1;
+      border: 1.5px solid rgba(74,155,127,0.25);
+      border-radius: 16px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      resize: none;
+      line-height: 1.6;
+      max-height: 120px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: var(--green); }
+    textarea::placeholder { color: #b0c4bc; }
+
+    #send-btn {
+      width: 44px;
+      height: 44px;
+      background: var(--green);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    #send-btn:hover { background: var(--green-light); transform: scale(1.05); }
+    #send-btn:disabled { background: #c5d9d3; cursor: not-allowed; transform: none; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+      #chat-area { padding: 16px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="index.html" class="back-btn">← もどる</a>
+    <div class="header-title">AIに話しかける</div>
+    <button class="clear-btn" onclick="clearHistory()">履歴を消す</button>
+  </header>
+
+  <div id="chat-area">
+    <div class="welcome" id="welcome">
+      <div class="icon">🌿</div>
+      <h2>こんにちは。話しかけてみてください。</h2>
+      <p>どんなことでも、ゆっくり話してください。<br>ここはあなたのためのスペースです。</p>
+    </div>
+  </div>
+
+  <footer>
+    <div class="input-wrap">
+      <textarea id="input" placeholder="メッセージを入力..." rows="1"></textarea>
+      <button id="send-btn" onclick="sendMessage()">↑</button>
+    </div>
+  </footer>
+
+  <script>
+    const STORAGE_KEY = 'yc_chat_history';
+    let history = [];
+
+    // 履歴読み込み
+    function loadHistory() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          history = JSON.parse(saved);
+          history.forEach(msg => appendMessage(msg.role, msg.content, false));
+          if (history.length > 0) {
+            document.getElementById('welcome').style.display = 'none';
+          }
+        }
+      } catch(e) { history = []; }
+    }
+
+    // 履歴保存
+    function saveHistory() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    }
+
+    // 履歴削除
+    function clearHistory() {
+      if (!confirm('会話の履歴をすべて消しますか？')) return;
+      history = [];
+      localStorage.removeItem(STORAGE_KEY);
+      const area = document.getElementById('chat-area');
+      area.innerHTML = `
+        <div class="welcome" id="welcome">
+          <div class="icon">🌿</div>
+          <h2>こんにちは。話しかけてみてください。</h2>
+          <p>どんなことでも、ゆっくり話してください。<br>ここはあなたのためのスペースです。</p>
+        </div>`;
+    }
+
+    // メッセージ表示
+    function appendMessage(role, content, animate = true) {
+      const area = document.getElementById('chat-area');
+      const welcome = document.getElementById('welcome');
+      if (welcome) welcome.style.display = 'none';
+
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      if (!animate) div.style.animation = 'none';
+
+      const avatar = role === 'ai' ? '🌿' : '👤';
+      div.innerHTML = `
+        <div class="avatar">${avatar}</div>
+        <div class="bubble">${escapeHtml(content)}</div>
+      `;
+      area.appendChild(div);
+      area.scrollTop = area.scrollHeight;
+      return div;
+    }
+
+    // タイピング表示
+    function showTyping() {
+      const area = document.getElementById('chat-area');
+      const div = document.createElement('div');
+      div.className = 'message ai';
+      div.id = 'typing';
+      div.innerHTML = `
+        <div class="avatar">🌿</div>
+        <div class="bubble">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>
+      `;
+      area.appendChild(div);
+      area.scrollTop = area.scrollHeight;
+    }
+
+    function hideTyping() {
+      const el = document.getElementById('typing');
+      if (el) el.remove();
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+    }
+
+    // メッセージ送信
+    async function sendMessage() {
+      const input = document.getElementById('input');
+      const text = input.value.trim();
+      if (!text) return;
+
+      input.value = '';
+      input.style.height = 'auto';
+      document.getElementById('send-btn').disabled = true;
+
+      appendMessage('user', text);
+      history.push({ role: 'user', content: text });
+      saveHistory();
+
+      showTyping();
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ history })
+        });
+
+        hideTyping();
+
+        if (!res.ok) throw new Error('サーバーエラー');
+
+        const data = await res.json();
+        const reply = data.reply;
+
+        appendMessage('ai', reply);
+        history.push({ role: 'model', content: reply });
+        saveHistory();
+
+      } catch(e) {
+        hideTyping();
+        appendMessage('ai', 'ごめんなさい、うまく返事ができませんでした。もう一度試してみてください。');
+      }
+
+      document.getElementById('send-btn').disabled = false;
+      input.focus();
+    }
+
+    // Enterキー送信（Shift+Enterで改行）
+    document.getElementById('input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // テキストエリア自動高さ調整
+    document.getElementById('input').addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+
+    // 初期化
+    loadHistory();
+  </script>
+</body>
+</html>
