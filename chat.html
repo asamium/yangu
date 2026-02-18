@@ -13,9 +13,6 @@
       --cream: #fdfaf5;
       --text: #2d3a35;
       --text-soft: #6b8278;
-      --accent: #f0a050;
-      --user-bubble: #4a9b7f;
-      --ai-bubble: #ffffff;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -29,7 +26,6 @@
       flex-direction: column;
     }
 
-    /* ヘッダー */
     header {
       padding: 16px 24px;
       background: white;
@@ -74,7 +70,6 @@
     }
     .clear-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-pale); }
 
-    /* チャットエリア */
     #chat-area {
       flex: 1;
       overflow-y: auto;
@@ -85,7 +80,6 @@
       scroll-behavior: smooth;
     }
 
-    /* ウェルカムメッセージ */
     .welcome {
       text-align: center;
       padding: 40px 20px;
@@ -100,7 +94,6 @@
     }
     .welcome p { font-size: 13px; line-height: 1.8; }
 
-    /* メッセージ */
     .message {
       display: flex;
       gap: 10px;
@@ -110,23 +103,16 @@
 
     .message.user {
       margin-left: auto;
-      flex-direction: row-reverse;
     }
 
-    .avatar {
+    .ai-avatar {
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 15px;
+      object-fit: cover;
       flex-shrink: 0;
       margin-top: 2px;
     }
-
-    .message.ai .avatar { background: var(--green-pale); }
-    .message.user .avatar { background: rgba(74,155,127,0.15); }
 
     .bubble {
       padding: 12px 16px;
@@ -134,26 +120,28 @@
       font-size: 14px;
       line-height: 1.8;
       max-width: calc(100% - 50px);
+      word-break: break-word;
+      white-space: pre-wrap;
     }
 
     .message.ai .bubble {
-      background: var(--ai-bubble);
+      background: white;
       border: 1px solid rgba(74,155,127,0.15);
       border-top-left-radius: 4px;
       box-shadow: 0 1px 6px rgba(74,155,127,0.08);
     }
 
     .message.user .bubble {
-      background: var(--user-bubble);
+      background: var(--green);
       color: white;
       border-top-right-radius: 4px;
+      max-width: 100%;
     }
 
-    /* タイピング */
     .typing-indicator {
       display: flex;
       gap: 5px;
-      padding: 14px 16px;
+      padding: 4px 0;
     }
     .typing-dot {
       width: 7px;
@@ -170,7 +158,6 @@
       30% { transform: translateY(-6px); }
     }
 
-    /* 入力エリア */
     footer {
       padding: 12px 16px;
       background: white;
@@ -200,6 +187,7 @@
       max-height: 120px;
       outline: none;
       transition: border-color 0.2s;
+      overflow-y: auto;
     }
     textarea:focus { border-color: var(--green); }
     textarea::placeholder { color: #b0c4bc; }
@@ -256,9 +244,9 @@
 
   <script>
     const STORAGE_KEY = 'yc_chat_history';
+    const AI_ICON = 'images/icon.png'; // ← アイコン画像のパス
     let history = [];
 
-    // 履歴読み込み
     function loadHistory() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -272,12 +260,10 @@
       } catch(e) { history = []; }
     }
 
-    // 履歴保存
     function saveHistory() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
     }
 
-    // 履歴削除
     function clearHistory() {
       if (!confirm('会話の履歴をすべて消しますか？')) return;
       history = [];
@@ -291,42 +277,65 @@
         </div>`;
     }
 
-    // メッセージ表示
     function appendMessage(role, content, animate = true) {
       const area = document.getElementById('chat-area');
       const welcome = document.getElementById('welcome');
       if (welcome) welcome.style.display = 'none';
 
       const div = document.createElement('div');
-      div.className = `message ${role}`;
+      // roleが'model'の場合も'ai'として扱う
+      const displayRole = (role === 'model') ? 'ai' : role;
+      div.className = `message ${displayRole}`;
       if (!animate) div.style.animation = 'none';
 
-      const avatar = role === 'ai' ? '🌿' : '👤';
-      div.innerHTML = `
-        <div class="avatar">${avatar}</div>
-        <div class="bubble">${escapeHtml(content)}</div>
-      `;
+      if (displayRole === 'ai') {
+        const img = document.createElement('img');
+        img.src = AI_ICON;
+        img.className = 'ai-avatar';
+        img.alt = 'AI';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = content; // textContentで改行・枠ズレを防ぐ
+
+        div.appendChild(img);
+        div.appendChild(bubble);
+      } else {
+        // ユーザーはバブルのみ（アイコンなし）
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = content;
+
+        div.appendChild(bubble);
+      }
+
       area.appendChild(div);
       area.scrollTop = area.scrollHeight;
       return div;
     }
 
-    // タイピング表示
     function showTyping() {
       const area = document.getElementById('chat-area');
       const div = document.createElement('div');
       div.className = 'message ai';
       div.id = 'typing';
-      div.innerHTML = `
-        <div class="avatar">🌿</div>
-        <div class="bubble">
-          <div class="typing-indicator">
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-            <div class="typing-dot"></div>
-          </div>
-        </div>
-      `;
+
+      const img = document.createElement('img');
+      img.src = AI_ICON;
+      img.className = 'ai-avatar';
+      img.alt = 'AI';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.innerHTML = `
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>`;
+
+      div.appendChild(img);
+      div.appendChild(bubble);
       area.appendChild(div);
       area.scrollTop = area.scrollHeight;
     }
@@ -336,15 +345,6 @@
       if (el) el.remove();
     }
 
-    function escapeHtml(text) {
-      return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/\n/g, '<br>');
-    }
-
-    // メッセージ送信
     async function sendMessage() {
       const input = document.getElementById('input');
       const text = input.value.trim();
@@ -387,7 +387,6 @@
       input.focus();
     }
 
-    // Enterキー送信（Shift+Enterで改行）
     document.getElementById('input').addEventListener('keydown', function(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -395,13 +394,11 @@
       }
     });
 
-    // テキストエリア自動高さ調整
     document.getElementById('input').addEventListener('input', function() {
       this.style.height = 'auto';
       this.style.height = Math.min(this.scrollHeight, 120) + 'px';
     });
 
-    // 初期化
     loadHistory();
   </script>
 </body>
