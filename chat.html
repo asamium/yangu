@@ -92,7 +92,9 @@
       color: var(--text);
       margin-bottom: 8px;
     }
-    .welcome p { font-size: 13px; line-height: 1.8; display: inline-block; text-align: left; }
+    .welcome p { font-size: 13px; line-height: 1.8; }
+    .welcome .list-wrap { display: flex; justify-content: center; margin-top: 8px; }
+    .welcome .list-wrap ul { list-style: none; text-align: left; font-size: 13px; line-height: 2; color: var(--text-soft); }
 
     .message {
       display: flex;
@@ -231,7 +233,14 @@
     <div class="welcome" id="welcome">
       <div class="icon">🌿</div>
       <h2>あなたにあったやんけあくんにしてはなしてみよう！</h2>
-      <p>このようにいれてもらえるとはなしかたがかわるよ<br>・なんさいなのか。<br>・ふりがなをふってほしい。<br>・わかりやすくして。</p>
+      <p>このようにいれてもらえるとはなしかたがかわるよ</p>
+      <div class="list-wrap">
+        <ul>
+          <li>・なんさいなのか。</li>
+          <li>・ふりがなをふってほしい。</li>
+          <li>・わかりやすくして。</li>
+        </ul>
+      </div>
     </div>
   </div>
 
