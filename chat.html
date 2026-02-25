@@ -93,8 +93,6 @@
       margin-bottom: 8px;
     }
     .welcome p { font-size: 13px; line-height: 1.8; }
-    .welcome .list-wrap { display: flex; justify-content: center; margin-top: 8px; }
-    .welcome .list-wrap ul { list-style: none; text-align: left; font-size: 13px; line-height: 2; color: var(--text-soft); }
 
     .message {
       display: flex;
@@ -217,6 +215,60 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* 編集・リトライボタン */
+    .message-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-width: 680px;
+    }
+    .message-wrap.user { align-items: flex-end; margin-left: auto; }
+    .message-wrap.ai { align-items: flex-start; }
+
+    .msg-actions {
+      display: none;
+      gap: 6px;
+    }
+    .message-wrap:hover .msg-actions { display: flex; }
+
+    .action-btn {
+      background: none;
+      border: 1px solid rgba(74,155,127,0.25);
+      color: var(--text-soft);
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: all 0.2s;
+    }
+    .action-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-pale); }
+
+    .edit-textarea {
+      width: 100%;
+      border: 1.5px solid var(--green);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: 'Noto Sans JP', sans-serif;
+      background: white;
+      color: var(--text);
+      resize: none;
+      line-height: 1.6;
+      outline: none;
+    }
+    .edit-btns { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end; }
+    .edit-save {
+      background: var(--green); color: white; border: none;
+      border-radius: 8px; padding: 5px 14px; font-size: 12px;
+      cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+    }
+    .edit-cancel {
+      background: none; border: 1px solid rgba(74,155,127,0.3); color: var(--text-soft);
+      border-radius: 8px; padding: 5px 14px; font-size: 12px;
+      cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
+    }
+
     @media (max-width: 600px) {
       #chat-area { padding: 16px 12px; }
     }
@@ -233,14 +285,7 @@
     <div class="welcome" id="welcome">
       <div class="icon">🌿</div>
       <h2>あなたにあったやんけあくんにしてはなしてみよう！</h2>
-      <p>このようにいれてもらえるとはなしかたがかわるよ</p>
-      <div class="list-wrap">
-        <ul>
-          <li>・なんさいなのか。</li>
-          <li>・ふりがなをふってほしい。</li>
-          <li>・わかりやすくして。</li>
-        </ul>
-      </div>
+      <p>このようにいれてもらえるとはなしかたがかわるよ<br>・なんさいなのか。<br>・ふりがなをふってほしい。<br>・わかりやすくして。</p>
     </div>
   </div>
 
@@ -253,18 +298,19 @@
 
   <script>
     const STORAGE_KEY = 'yc_chat_history';
-    const AI_ICON = 'images/icon.png'; // ← アイコン画像のパス
+    const AI_ICON = 'images/icon.png';
     let history = [];
 
+    // -------------------------------------------------------
+    // 履歴の保存・読み込み・削除
+    // -------------------------------------------------------
     function loadHistory() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           history = JSON.parse(saved);
           history.forEach(msg => appendMessage(msg.role, msg.content, false));
-          if (history.length > 0) {
-            document.getElementById('welcome').style.display = 'none';
-          }
+          if (history.length > 0) document.getElementById('welcome').style.display = 'none';
         }
       } catch(e) { history = []; }
     }
@@ -277,80 +323,198 @@
       if (!confirm('会話の履歴をすべて消しますか？')) return;
       history = [];
       localStorage.removeItem(STORAGE_KEY);
-      const area = document.getElementById('chat-area');
-      area.innerHTML = `
+      document.getElementById('chat-area').innerHTML = `
         <div class="welcome" id="welcome">
           <div class="icon">🌿</div>
-                <h2>あなたにあったやんけあくんにしてはなしてみよう！</h2>
-                <p>このようにいれてもらえるとはなしかたがかわるよ</p>
-                  <div class="list-wrap">
-                  <ul>
-                  <li>・なんさいなのか。</li>
-                  <li>・ふりがなをふってほしい。</li>
-                  <li>・わかりやすくして。</li>
-          </ul>
+          <h2>あなたにあったやんけあくんにしてはなしてみよう！</h2>
+          <p>このようにいれてもらえるとはなしかたがかわるよ</p>
+          <div class="list-wrap"><ul>
+            <li>・なんさいなのか。</li>
+            <li>・ふりがなをふってほしい。</li>
+            <li>・わかりやすくして。</li>
+          </ul></div>
         </div>`;
     }
 
-    function appendMessage(role, content, animate = true) {
+    // -------------------------------------------------------
+    // メッセージをDOMに追加
+    // historyIndex: このメッセージがhistory配列の何番目か（編集・リトライ用）
+    // -------------------------------------------------------
+    function appendMessage(role, content, animate = true, historyIndex = null) {
       const area = document.getElementById('chat-area');
       const welcome = document.getElementById('welcome');
       if (welcome) welcome.style.display = 'none';
 
-      const div = document.createElement('div');
-      // roleが'model'の場合も'ai'として扱う
       const displayRole = (role === 'model') ? 'ai' : role;
-      div.className = `message ${displayRole}`;
-      if (!animate) div.style.animation = 'none';
+
+      // 外側ラッパー（編集・リトライボタンを持つ）
+      const wrap = document.createElement('div');
+      wrap.className = `message-wrap ${displayRole}`;
+      if (historyIndex !== null) wrap.dataset.index = historyIndex;
+      if (!animate) wrap.style.animation = 'none';
+
+      // メッセージ本体
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${displayRole}`;
+      if (!animate) msgDiv.style.animation = 'none';
 
       if (displayRole === 'ai') {
         const img = document.createElement('img');
-        img.src = AI_ICON;
-        img.className = 'ai-avatar';
-        img.alt = 'AI';
-
-        const bubble = document.createElement('div');
-        bubble.className = 'bubble';
-        bubble.textContent = content; // textContentで改行・枠ズレを防ぐ
-
-        div.appendChild(img);
-        div.appendChild(bubble);
-      } else {
-        // ユーザーはバブルのみ（アイコンなし）
+        img.src = AI_ICON; img.className = 'ai-avatar'; img.alt = 'AI';
         const bubble = document.createElement('div');
         bubble.className = 'bubble';
         bubble.textContent = content;
-
-        div.appendChild(bubble);
+        msgDiv.appendChild(img);
+        msgDiv.appendChild(bubble);
+      } else {
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.textContent = content;
+        msgDiv.appendChild(bubble);
       }
 
-      area.appendChild(div);
+      wrap.appendChild(msgDiv);
+
+      // アクションボタン
+      const actions = document.createElement('div');
+      actions.className = 'msg-actions';
+
+      if (displayRole === 'user') {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'action-btn';
+        editBtn.textContent = '✏️ 編集';
+        editBtn.onclick = () => startEdit(wrap, content);
+        actions.appendChild(editBtn);
+      } else {
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'action-btn';
+        retryBtn.textContent = '🔄 もう一度';
+        retryBtn.onclick = () => retryMessage(wrap);
+        actions.appendChild(retryBtn);
+      }
+
+      wrap.appendChild(actions);
+      area.appendChild(wrap);
       area.scrollTop = area.scrollHeight;
-      return div;
+      return wrap;
     }
 
+    // -------------------------------------------------------
+    // 編集モード開始
+    // -------------------------------------------------------
+    function startEdit(wrap, originalContent) {
+      const msgDiv = wrap.querySelector('.message');
+      const actions = wrap.querySelector('.msg-actions');
+      msgDiv.style.display = 'none';
+      actions.style.display = 'none';
+
+      const editArea = document.createElement('div');
+      editArea.className = 'edit-area';
+
+      const ta = document.createElement('textarea');
+      ta.className = 'edit-textarea';
+      ta.value = originalContent;
+      ta.rows = Math.min(originalContent.split('\n').length + 1, 6);
+
+      const btns = document.createElement('div');
+      btns.className = 'edit-btns';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'edit-save';
+      saveBtn.textContent = '送信';
+      saveBtn.onclick = () => commitEdit(wrap, ta.value.trim());
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'edit-cancel';
+      cancelBtn.textContent = 'キャンセル';
+      cancelBtn.onclick = () => {
+        editArea.remove();
+        msgDiv.style.display = '';
+        actions.style.display = '';
+      };
+
+      btns.appendChild(cancelBtn);
+      btns.appendChild(saveBtn);
+      editArea.appendChild(ta);
+      editArea.appendChild(btns);
+      wrap.insertBefore(editArea, actions);
+      ta.focus();
+
+      ta.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit(wrap, ta.value.trim()); }
+        if (e.key === 'Escape') cancelBtn.click();
+      });
+    }
+
+    // -------------------------------------------------------
+    // 編集確定：このメッセージ以降を削除して再送信
+    // -------------------------------------------------------
+    function commitEdit(wrap, newText) {
+      if (!newText) return;
+      const idx = getWrapIndex(wrap);
+
+      // history をこのメッセージの直前まで切り詰める
+      history = history.slice(0, idx);
+      saveHistory();
+
+      // DOM上でこのメッセージ以降を全部削除
+      removeFromWrap(wrap);
+
+      // 新しいテキストで送信
+      submitText(newText);
+    }
+
+    // -------------------------------------------------------
+    // リトライ：このAIメッセージを削除し、直前のuserメッセージで再送信
+    // -------------------------------------------------------
+    function retryMessage(wrap) {
+      const idx = getWrapIndex(wrap);
+      if (idx < 1) return;
+
+      // このAIメッセージをhistoryから削除
+      history = history.slice(0, idx);
+      saveHistory();
+
+      // DOM上でこのAIメッセージを削除
+      removeFromWrap(wrap);
+
+      // historyの末尾はuserメッセージのはずなので、そのまま再送信
+      callApi();
+    }
+
+    // -------------------------------------------------------
+    // wrapのhistory上のインデックスを返す
+    // -------------------------------------------------------
+    function getWrapIndex(wrap) {
+      const allWraps = Array.from(document.getElementById('chat-area').querySelectorAll('.message-wrap'));
+      return allWraps.indexOf(wrap);
+    }
+
+    // -------------------------------------------------------
+    // 指定wrap以降のDOM要素を削除
+    // -------------------------------------------------------
+    function removeFromWrap(targetWrap) {
+      const area = document.getElementById('chat-area');
+      const allWraps = Array.from(area.querySelectorAll('.message-wrap'));
+      const idx = allWraps.indexOf(targetWrap);
+      allWraps.slice(idx).forEach(w => w.remove());
+    }
+
+    // -------------------------------------------------------
+    // タイピングインジケーター
+    // -------------------------------------------------------
     function showTyping() {
       const area = document.getElementById('chat-area');
       const div = document.createElement('div');
-      div.className = 'message ai';
-      div.id = 'typing';
-
+      div.className = 'message ai'; div.id = 'typing';
       const img = document.createElement('img');
-      img.src = AI_ICON;
-      img.className = 'ai-avatar';
-      img.alt = 'AI';
-
+      img.src = AI_ICON; img.className = 'ai-avatar'; img.alt = 'AI';
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
-      bubble.innerHTML = `
-        <div class="typing-indicator">
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-          <div class="typing-dot"></div>
-        </div>`;
-
-      div.appendChild(img);
-      div.appendChild(bubble);
+      bubble.innerHTML = `<div class="typing-indicator">
+        <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+      </div>`;
+      div.appendChild(img); div.appendChild(bubble);
       area.appendChild(div);
       area.scrollTop = area.scrollHeight;
     }
@@ -360,19 +524,21 @@
       if (el) el.remove();
     }
 
-    async function sendMessage() {
-      const input = document.getElementById('input');
-      const text = input.value.trim();
-      if (!text) return;
-
-      input.value = '';
-      input.style.height = 'auto';
-      document.getElementById('send-btn').disabled = true;
-
-      appendMessage('user', text);
+    // -------------------------------------------------------
+    // テキストをhistoryに追加してAPI呼び出し
+    // -------------------------------------------------------
+    function submitText(text) {
+      appendMessage('user', text, true, history.length);
       history.push({ role: 'user', content: text });
       saveHistory();
+      callApi();
+    }
 
+    // -------------------------------------------------------
+    // Gemini API呼び出し
+    // -------------------------------------------------------
+    async function callApi() {
+      document.getElementById('send-btn').disabled = true;
       showTyping();
 
       try {
@@ -381,32 +547,36 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ history })
         });
-
         hideTyping();
-
         if (!res.ok) throw new Error('サーバーエラー');
-
         const data = await res.json();
         const reply = data.reply;
-
-        appendMessage('ai', reply);
+        appendMessage('ai', reply, true, history.length);
         history.push({ role: 'model', content: reply });
         saveHistory();
-
       } catch(e) {
         hideTyping();
         appendMessage('ai', 'ごめんなさい、うまく返事ができませんでした。もう一度試してみてください。');
       }
 
       document.getElementById('send-btn').disabled = false;
-      input.focus();
+      document.getElementById('input').focus();
+    }
+
+    // -------------------------------------------------------
+    // 送信ボタン・Enter キー
+    // -------------------------------------------------------
+    async function sendMessage() {
+      const input = document.getElementById('input');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      input.style.height = 'auto';
+      submitText(text);
     }
 
     document.getElementById('input').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
 
     document.getElementById('input').addEventListener('input', function() {
