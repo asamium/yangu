@@ -230,6 +230,7 @@
       gap: 6px;
     }
     .message-wrap:hover .msg-actions { display: flex; }
+    .message-wrap.actions-visible .msg-actions { display: flex; }
 
     .action-btn {
       background: none;
@@ -585,6 +586,32 @@
     });
 
     loadHistory();
+
+    // スマホ対応：バブルをタップでボタン表示/非表示
+    document.getElementById('chat-area').addEventListener('click', function(e) {
+      const wrap = e.target.closest('.message-wrap');
+
+      // ボタン自体やテキストエリアのクリックは無視
+      if (e.target.closest('.action-btn') || e.target.closest('.edit-area')) return;
+
+      // 他のwrapのactions-visibleを全部消す
+      document.querySelectorAll('.message-wrap.actions-visible').forEach(w => {
+        if (w !== wrap) w.classList.remove('actions-visible');
+      });
+
+      if (wrap) {
+        wrap.classList.toggle('actions-visible');
+      }
+    });
+
+    // チャットエリア外タップで全部消す
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#chat-area')) {
+        document.querySelectorAll('.message-wrap.actions-visible').forEach(w => {
+          w.classList.remove('actions-visible');
+        });
+      }
+    });
   </script>
 </body>
 </html>
