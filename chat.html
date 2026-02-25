@@ -121,7 +121,10 @@
       line-height: 1.8;
       max-width: calc(100% - 50px);
       word-break: break-word;
-      white-space: pre-wrap;
+    }
+
+    .message.user .bubble {
+      white-space: pre-wrap; /* ユーザーの改行はそのまま */
     }
 
     .message.ai .bubble {
@@ -274,6 +277,32 @@
       #chat-area { padding: 16px 12px; }
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <style>
+    /* Markdownレンダリング用スタイル */
+    .message.ai .bubble strong { font-weight: 700; }
+    .message.ai .bubble em { font-style: italic; }
+    .message.ai .bubble h1,.message.ai .bubble h2,.message.ai .bubble h3 {
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      margin: 8px 0 4px;
+      line-height: 1.4;
+    }
+    .message.ai .bubble h1 { font-size: 17px; }
+    .message.ai .bubble h2 { font-size: 15px; }
+    .message.ai .bubble h3 { font-size: 14px; }
+    .message.ai .bubble ul, .message.ai .bubble ol {
+      padding-left: 18px; margin: 4px 0;
+    }
+    .message.ai .bubble li { margin: 2px 0; }
+    .message.ai .bubble p { margin: 4px 0; }
+    .message.ai .bubble code {
+      background: var(--green-pale);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 12px;
+    }
+    .message.ai .bubble hr { border: none; border-top: 1px solid rgba(74,155,127,0.2); margin: 8px 0; }
+  </style>
 </head>
 <body>
   <header>
@@ -364,13 +393,13 @@
         img.src = AI_ICON; img.className = 'ai-avatar'; img.alt = 'AI';
         const bubble = document.createElement('div');
         bubble.className = 'bubble';
-        bubble.textContent = content;
+        bubble.innerHTML = marked.parse(content); // MarkdownをHTMLに変換
         msgDiv.appendChild(img);
         msgDiv.appendChild(bubble);
       } else {
         const bubble = document.createElement('div');
         bubble.className = 'bubble';
-        bubble.textContent = content;
+        bubble.textContent = content; // ユーザーはそのまま
         msgDiv.appendChild(bubble);
       }
 
