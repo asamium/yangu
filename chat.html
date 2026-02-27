@@ -328,18 +328,15 @@
       box-shadow: 0 6px 20px rgba(74,155,127,0.15);
     }
     .char-label {
-      width: 36px;
-      height: 36px;
-      background: var(--green);
-      color: white;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Zen Kaku Gothic New', sans-serif;
-      font-weight: 700;
-      font-size: 16px;
+      object-fit: cover;
       flex-shrink: 0;
+      border: 2px solid rgba(74,155,127,0.2);
+    }
+    .char-card:hover .char-label, .char-card:active .char-label {
+      border-color: var(--green);
     }
     .char-text {
       font-size: 14px;
@@ -386,15 +383,15 @@
     <p>話し方がちがうよ。好きなのをえらんでみて！</p>
     <div class="char-cards">
       <button class="char-card" onclick="selectChar('A')">
-        <div class="char-label">A</div>
+        <img class="char-label" src="images/chara-a.png" alt="A">
         <div class="char-text">こんにちは！なんでもきいちゃうよ！！！</div>
       </button>
       <button class="char-card" onclick="selectChar('B')">
-        <div class="char-label">B</div>
+        <img class="char-label" src="images/chara-b.png" alt="B">
         <div class="char-text">どんなことでも気軽に話してみてね</div>
       </button>
       <button class="char-card" onclick="selectChar('C')">
-        <div class="char-label">C</div>
+        <img class="char-label" src="images/chara-c.png" alt="C">
         <div class="char-text">お手伝いします。なんでも話してみてくださいね</div>
       </button>
     </div>
@@ -423,9 +420,17 @@
   <script>
     const STORAGE_KEY = 'yc_chat_history';
     const CHAR_KEY = 'yc_char';
-    const AI_ICON = 'images/icon.png';
+    const CHAR_ICONS = {
+      A: 'images/chara-a.png',
+      B: 'images/chara-b.png',
+      C: 'images/chara-c.png',
+    };
     let history = [];
     let currentChar = null;
+
+    function getIcon() {
+      return CHAR_ICONS[currentChar] || 'images/chara-b.png';
+    }
 
     // -------------------------------------------------------
     // キャラクター選択
@@ -518,7 +523,7 @@
 
       if (displayRole === 'ai') {
         const img = document.createElement('img');
-        img.src = AI_ICON; img.className = 'ai-avatar'; img.alt = 'AI';
+        img.src = getIcon(); img.className = 'ai-avatar'; img.alt = 'AI';
         const bubble = document.createElement('div');
         bubble.className = 'bubble';
         bubble.innerHTML = marked.parse(content); // MarkdownをHTMLに変換
@@ -666,7 +671,7 @@
       const div = document.createElement('div');
       div.className = 'message ai'; div.id = 'typing';
       const img = document.createElement('img');
-      img.src = AI_ICON; img.className = 'ai-avatar'; img.alt = 'AI';
+      img.src = getIcon(); img.className = 'ai-avatar'; img.alt = 'AI';
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
       bubble.innerHTML = `<div class="typing-indicator">
