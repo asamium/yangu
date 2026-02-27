@@ -278,6 +278,74 @@
     @media (max-width: 600px) {
       #chat-area { padding: 16px 12px; }
     }
+
+    /* キャラクター選択画面 */
+    #char-select {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      gap: 24px;
+    }
+    #char-select h2 {
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      font-size: 18px;
+      color: var(--text);
+      text-align: center;
+    }
+    #char-select p {
+      font-size: 13px;
+      color: var(--text-soft);
+      text-align: center;
+      margin-top: -12px;
+    }
+    .char-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .char-card {
+      background: white;
+      border: 2px solid rgba(74,155,127,0.15);
+      border-radius: 16px;
+      padding: 20px 24px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(74,155,127,0.06);
+    }
+    .char-card:hover, .char-card:active {
+      border-color: var(--green);
+      background: var(--green-pale);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(74,155,127,0.15);
+    }
+    .char-label {
+      width: 36px;
+      height: 36px;
+      background: var(--green);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .char-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
   <style>
@@ -313,7 +381,26 @@
     <button class="clear-btn" onclick="clearHistory()">履歴を消す</button>
   </header>
 
-  <div id="chat-area">
+  <div id="char-select">
+    <h2>やんけあくんをえらんでね</h2>
+    <p>話し方がちがうよ。好きなのをえらんでみて！</p>
+    <div class="char-cards">
+      <button class="char-card" onclick="selectChar('A')">
+        <div class="char-label">A</div>
+        <div class="char-text">こんにちは！なんでもきいちゃうよ！！！</div>
+      </button>
+      <button class="char-card" onclick="selectChar('B')">
+        <div class="char-label">B</div>
+        <div class="char-text">どんなことでも気軽に話してみてね</div>
+      </button>
+      <button class="char-card" onclick="selectChar('C')">
+        <div class="char-label">C</div>
+        <div class="char-text">お手伝いします。なんでも話してみてくださいね</div>
+      </button>
+    </div>
+  </div>
+
+  <div id="chat-area" style="display:none">
     <div class="welcome" id="welcome">
       <div class="icon">🌿</div>
       <h2>あなたにあったやんけあくんにしてはなしてみよう！</h2>
@@ -326,7 +413,7 @@
     </div>
   </div>
 
-  <footer>
+  <footer id="chat-footer" style="display:none">
     <div class="input-wrap">
       <textarea id="input" placeholder="メッセージを入力..." rows="1"></textarea>
       <button id="send-btn" onclick="sendMessage()">↑</button>
@@ -335,19 +422,58 @@
 
   <script>
     const STORAGE_KEY = 'yc_chat_history';
+    const CHAR_KEY = 'yc_char';
     const AI_ICON = 'images/icon.png';
     let history = [];
+    let currentChar = null;
+
+    // -------------------------------------------------------
+    // キャラクター選択
+    // -------------------------------------------------------
+    function selectChar(charId) {
+      currentChar = charId;
+      localStorage.setItem(CHAR_KEY, charId);
+      document.getElementById('char-select').style.display = 'none';
+      document.getElementById('chat-area').style.display = 'flex';
+      document.getElementById('chat-footer').style.display = 'block';
+      showWelcome();
+      document.getElementById('input').focus();
+    }
+
+    function showWelcome() {
+      const area = document.getElementById('chat-area');
+      area.innerHTML = `
+        <div class="welcome" id="welcome">
+          <div class="icon">🌿</div>
+          <h2>あなたにあったやんけあくんにしてはなしてみよう！</h2>
+          <p>このようにいれてもらえるとはなしかたがかわるよ</p>
+          <div class="list-wrap"><ul>
+            <li>・なんさいなのか。</li>
+            <li>・ふりがなをふってほしい。</li>
+            <li>・わかりやすくして。</li>
+          </ul></div>
+        </div>`;
+    }
 
     // -------------------------------------------------------
     // 履歴の保存・読み込み・削除
     // -------------------------------------------------------
     function loadHistory() {
       try {
+        const savedChar = localStorage.getItem(CHAR_KEY);
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
+        if (savedChar && saved) {
+          currentChar = savedChar;
           history = JSON.parse(saved);
+          // チャット画面を表示
+          document.getElementById('char-select').style.display = 'none';
+          document.getElementById('chat-area').style.display = 'flex';
+          document.getElementById('chat-footer').style.display = 'block';
+          showWelcome();
           history.forEach(msg => appendMessage(msg.role, msg.content, false));
-          if (history.length > 0) document.getElementById('welcome').style.display = 'none';
+          if (history.length > 0) {
+            document.getElementById('welcome').style.display = 'none';
+          }
         }
       } catch(e) { history = []; }
     }
@@ -359,18 +485,13 @@
     function clearHistory() {
       if (!confirm('会話の履歴をすべて消しますか？')) return;
       history = [];
+      currentChar = null;
       localStorage.removeItem(STORAGE_KEY);
-      document.getElementById('chat-area').innerHTML = `
-        <div class="welcome" id="welcome">
-          <div class="icon">🌿</div>
-          <h2>あなたにあったやんけあくんにしてはなしてみよう！</h2>
-          <p>このようにいれてもらえるとはなしかたがかわるよ</p>
-          <div class="list-wrap"><ul>
-            <li>・なんさいなのか。</li>
-            <li>・ふりがなをふってほしい。</li>
-            <li>・わかりやすくして。</li>
-          </ul></div>
-        </div>`;
+      localStorage.removeItem(CHAR_KEY);
+      // チャット画面を隠してキャラクター選択に戻る
+      document.getElementById('chat-area').style.display = 'none';
+      document.getElementById('chat-footer').style.display = 'none';
+      document.getElementById('char-select').style.display = 'flex';
     }
 
     // -------------------------------------------------------
@@ -582,7 +703,7 @@
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ history })
+          body: JSON.stringify({ history, charId: currentChar })
         });
         hideTyping();
         if (!res.ok) throw new Error('サーバーエラー');
