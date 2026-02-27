@@ -291,12 +291,12 @@
     }
     #char-select h2 {
       font-family: 'Zen Kaku Gothic New', sans-serif;
-      font-size: 18px;
+      font-size: 26px;
       color: var(--text);
       text-align: center;
     }
     #char-select p {
-      font-size: 13px;
+      font-size: 18px;
       color: var(--text-soft);
       text-align: center;
       margin-top: -12px;
@@ -304,21 +304,21 @@
     .char-cards {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 18px;
       width: 100%;
-      max-width: 420px;
+      max-width: 560px;
     }
     .char-card {
       background: white;
       border: 2px solid rgba(74,155,127,0.15);
-      border-radius: 16px;
-      padding: 20px 24px;
+      border-radius: 20px;
+      padding: 28px 32px;
       cursor: pointer;
       transition: all 0.2s ease;
       text-align: left;
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 22px;
       box-shadow: 0 2px 8px rgba(74,155,127,0.06);
     }
     .char-card:hover, .char-card:active {
@@ -328,8 +328,8 @@
       box-shadow: 0 6px 20px rgba(74,155,127,0.15);
     }
     .char-label {
-      width: 52px;
-      height: 52px;
+      width: 72px;
+      height: 72px;
       border-radius: 50%;
       object-fit: cover;
       flex-shrink: 0;
@@ -339,9 +339,16 @@
       border-color: var(--green);
     }
     .char-text {
-      font-size: 14px;
+      font-size: 18px;
       line-height: 1.6;
       color: var(--text);
+    }
+    .char-info { display: flex; flex-direction: column; gap: 4px; }
+    .char-name {
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--green);
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
@@ -383,16 +390,25 @@
     <p>話し方がちがうよ。好きなのをえらんでみて！</p>
     <div class="char-cards">
       <button class="char-card" onclick="selectChar('A')">
-        <img class="char-label" src="images/chara-a.png" alt="A">
-        <div class="char-text">こんにちは！なんでもきいちゃうよ！！！</div>
+        <img class="char-label" src="images/chara-a.png" alt="はむすけ">
+        <div class="char-info">
+          <div class="char-name">はむすけ</div>
+          <div class="char-text">こんにちは！なんでもきいちゃうよ！！！</div>
+        </div>
       </button>
       <button class="char-card" onclick="selectChar('B')">
-        <img class="char-label" src="images/chara-b.png" alt="B">
-        <div class="char-text">どんなことでも気軽に話してみてね</div>
+        <img class="char-label" src="images/chara-b.png" alt="とと">
+        <div class="char-info">
+          <div class="char-name">とと</div>
+          <div class="char-text">どんなことでも気軽に話してみてね</div>
+        </div>
       </button>
       <button class="char-card" onclick="selectChar('C')">
-        <img class="char-label" src="images/chara-c.png" alt="C">
-        <div class="char-text">お手伝いします。なんでも話してみてくださいね</div>
+        <img class="char-label" src="images/chara-c.png" alt="むむ先生">
+        <div class="char-info">
+          <div class="char-name">むむ先生</div>
+          <div class="char-text">お手伝いします。なんでも話してみてくださいね</div>
+        </div>
       </button>
     </div>
   </div>
